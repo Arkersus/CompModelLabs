@@ -11,13 +11,13 @@ using System.Windows.Forms;
 
 namespace OSIP1._1
 {
-    public partial class Form2 : Form
+    public partial class Lab1GUI : Form
     {
         Configuration config;
         BackgroundWorker worker;
         System.Diagnostics.Stopwatch watch;
 
-        public Form2(Configuration cfg)
+        public Lab1GUI(Configuration cfg)
         {
             InitializeComponent();
             config = cfg;

@@ -1,6 +1,6 @@
 ﻿namespace OSIP1._1
 {
-    partial class Form1
+    partial class MainGUI
     {
         /// <summary>
         /// Обязательная переменная конструктора.

@@ -10,14 +10,14 @@ using System.Windows.Forms;
 
 namespace OSIP1._1
 {
-    public partial class Form3 : Form
+    public partial class Lab2GUI : Form
     {
         Configuration config;
         BackgroundWorker worker = new BackgroundWorker();
         System.Diagnostics.Stopwatch watch = new System.Diagnostics.Stopwatch();
         //List<int[]> strongComponents;
 
-        public Form3(Configuration cfg)
+        public Lab2GUI(Configuration cfg)
         {
             InitializeComponent();
             config = cfg;

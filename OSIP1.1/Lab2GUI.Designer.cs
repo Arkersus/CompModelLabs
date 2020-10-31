@@ -1,6 +1,6 @@
 ﻿namespace OSIP1._1
 {
-    partial class Form3
+    partial class Lab2GUI
     {
         /// <summary>
         /// Required designer variable.
