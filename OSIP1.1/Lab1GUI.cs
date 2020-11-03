@@ -42,7 +42,7 @@ namespace OSIP1._1
         {
             Symbol symbResult = (Symbol)e.Result;
             Graph graphResult = symbResult.Graph;
-            nodeCount.Text += graphResult.Size.ToString();
+            nodeCount.Text += graphResult.Count.ToString();
             vertCount.Text += graphResult.GetVnum().ToString();
             watch.Stop();
             execTime.Text += (watch.ElapsedMilliseconds.ToString() + " ms");

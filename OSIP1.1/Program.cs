@@ -48,38 +48,41 @@ namespace OSIP1._1
 			get { return vertices; }
 		}
 	};
-	class Point
+	class Point<T>
 	{
-		public decimal x;
-		public decimal y;
+		public T x;
+		public T y;
+		//public double X, Y;
 
 		public Point()
 		{
 
 		}
-		public Point(decimal _x, decimal _y)
+		public Point(T _x, T _y)
 		{
 			x = _x;
 			y = _y;
 		}
 
-		public Point(Point p)
+
+
+		public Point(Point<T> p)
 		{
-			x = p.x;
-			y = p.y; 
+			x = (T)p.x;
+			y = (T)p.y; 
 		}
 
-		public void Move(decimal dx, decimal dy)
-        {
-			x += dx;
-			y += dy;
-        }
+		//public void Move(T dx, T dy)
+  //      {
+		//	x = x + dx;
+		//	y = y + dy;
+  //      }
 
-		static public Point operator *(Point p, decimal m)
-        {
-			p.x *= m;
-			p.y *= m;
-			return p;
-        }
+		//static public Point<T> operator *(Point<T> p, decimal m)
+  //      {
+		//	p.x *= m;
+		//	p.y *= m;
+		//	return p;
+  //      }
 	};
 }

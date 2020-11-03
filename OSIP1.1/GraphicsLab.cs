@@ -16,12 +16,14 @@ namespace OSIP1._1
         private Symbol symbImage;
         private GameWindow window;
         private List<int[]> strongComps;
+        private List<Color> colors;
         int scale;
+        System.Diagnostics.Stopwatch watch;
 
         public GraphicsLab(Configuration cfg)
         {
             config = cfg;
-            scale = cfg.gridScale;
+            watch = new System.Diagnostics.Stopwatch();
         }
 
         private GameWindow GetWindow(int width, int height)
@@ -31,17 +33,32 @@ namespace OSIP1._1
             win.Load += Window_Load;
             win.RenderFrame += Window_RenderFrame;
             win.KeyPress += Window_KeyPress;
+            win.Closed += Win_Closed;
 
             return win;
+        }
+
+        private void Win_Closed(object sender, EventArgs e)
+        {
+            Console.WriteLine(symbImage.Graph.Count);
+            Console.WriteLine(watch.ElapsedMilliseconds);
+            symbImage = null;
+            strongComps = null;
+            colors = null;
+
         }
 
         private void Window_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (e.KeyChar == ' ')
             {
+                watch.Start();
                 symbImage.LocalizeRecSet(2);
+                strongComps = symbImage.GetStrongComps();
+                colors = GetColors(strongComps);
                 scale *= 2;
-
+                watch.Stop();
+            
                 GL.MatrixMode(MatrixMode.Projection);
                 GL.LoadIdentity();
                 GL.Ortho(0.0f, scale, scale, 0.0f, 0.0f, 1.0f);
@@ -51,10 +68,10 @@ namespace OSIP1._1
         private void Window_Load(object sender, EventArgs e)
         {
             GL.ClearColor(new Color4(1.0f, 1.0f, 1.0f, 1.0f));
+            //GL.ClearColor(new Color4(0.0f, 0.0f, 0.0f, 1.0f));
 
             GL.MatrixMode(MatrixMode.Projection);
             GL.LoadIdentity();
-            //GL.Ortho(0.0f, window.Width, window.Height, 0.0f, 0.0f, 1.0f);
             GL.Ortho(0.0f, scale, scale, 0.0f, 0.0f, 1.0f);
         }
 
@@ -72,12 +89,12 @@ namespace OSIP1._1
         {
             DrawCoords();
 
-            foreach (int[] i in strongComps)
+            for(int i = 0; i < strongComps.Count; i++)
             {
                 GL.Begin(PrimitiveType.Quads);
-                GL.Color3(Color.Black);
+                GL.Color3(colors[i]);
 
-                foreach (int j in i)
+                foreach (int j in strongComps[i])
                     DrawCell(j);
                 GL.End();
             }
@@ -87,6 +104,7 @@ namespace OSIP1._1
         {
             GL.Begin(PrimitiveType.Lines);
             GL.Color3(Color.Black);
+            //GL.Color3(Color.DarkGreen);
             GL.Vertex2(0, scale / 2);
             GL.Vertex2(scale, scale / 2);
             GL.Vertex2(scale / 2, 0);
@@ -105,14 +123,25 @@ namespace OSIP1._1
         }
         public void Run()
         {
-            Symbol symb = new Symbol(config);
-            strongComps = symb.GetStrongComps();
-            symbImage = symb;
-
+            watch.Start();
+            symbImage = new Symbol(config);
+            strongComps = symbImage.GetStrongComps();
+            colors = GetColors(strongComps);
+            scale = symbImage.GetScale;
+            watch.Stop();
             window = GetWindow(1000, 1000);
             window.Run();
 
 
+        }
+
+        private List<Color> GetColors(List<int[]> Comps)
+        {
+            var rng = new Random();
+            var colors = new List<Color>();
+            for (int i = 0; i < Comps.Count; i++)
+                colors.Add(Color.FromArgb(rng.Next(255), rng.Next(255), rng.Next(255)));
+            return colors;
         }
     }
 }

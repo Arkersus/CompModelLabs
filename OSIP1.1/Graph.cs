@@ -2,20 +2,21 @@
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
+using System.Globalization;
 using System.Linq;
 
 namespace OSIP1._1
 {
-    public class Graph : IEnumerable
+	public class Graph : IEnumerable
 	{
 		//private List<int>[] graph_array;
-		private ConcurrentDictionary<int, List<int>> graph_dict;
-		private int size;
+		private ConcurrentDictionary<int, List<int>> graphEdges;
+		private int graphNodes;
 
-		public Graph(int _size)
+		public Graph()
 		{
-			size = _size;
-			graph_dict = new ConcurrentDictionary<int, List<int>>();
+			graphEdges = new ConcurrentDictionary<int, List<int>>();
 			//graph_array = new List<int>[_grid];
 			//for (int i = 0; i < grid; i++)
 			//	graph_array[i] = new List<int>();
@@ -27,164 +28,210 @@ namespace OSIP1._1
 			//set => graph_array[i] = value;
 
 			get
-            {
-				if (graph_dict.ContainsKey(i))
-					return graph_dict[i];
+			{
+				if (graphEdges.ContainsKey(i))
+					return graphEdges[i];
 				else
 					return new List<int>();
-            }
+			}
 			set
-            {
-				graph_dict[i] = value;
-            }
+			{
+				graphEdges[i] = value;
+			}
 		}
 
-   //     private class GraphEnumerator : IEnumerator
-   //     {
-			//KeyValuePair<int, List<int>>[] items;
-   //         int position = -1;
+		//     private class GraphEnumerator : IEnumerator
+		//     {
+		//KeyValuePair<int, List<int>>[] items;
+		//         int position = -1;
 
-   //         public GraphEnumerator(ConcurrentDictionary<int, List<int>> graph)
-   //         {
-			//	items = new KeyValuePair<int, List<int>>[graph.Count];
-			//	int n = 0;
-			//	foreach(var i in graph)
-   //             {
-			//		items[n] = i;
-			//		n++;
-   //             }
+		//         public GraphEnumerator(ConcurrentDictionary<int, List<int>> graph)
+		//         {
+		//	items = new KeyValuePair<int, List<int>>[graph.Count];
+		//	int n = 0;
+		//	foreach(var i in graph)
+		//             {
+		//		items[n] = i;
+		//		n++;
+		//             }
 
-   //         }
-   //         private IEnumerator getEnumerator()
-   //         {
-   //             return (IEnumerator)this;
-   //         }
-   //         public bool MoveNext()
-   //         {
-   //             position++;
-   //             return (position < items.Length);
-   //         }
-   //         public void Reset()
-   //         {
-   //             position = -1;
-   //         }
-   //         public object Current
-   //         {
-   //             get
-   //             {
-   //                 try
-   //                 {
-   //                     return new NodeUnit(items[position].Key, items[position].Value);
-   //                 }
-   //                 catch (IndexOutOfRangeException)
-   //                 {
-   //                     throw new InvalidOperationException();
-   //                 }
-   //             }
-   //         }
-   //     }
+		//         }
+		//         private IEnumerator getEnumerator()
+		//         {
+		//             return (IEnumerator)this;
+		//         }
+		//         public bool MoveNext()
+		//         {
+		//             position++;
+		//             return (position < items.Length);
+		//         }
+		//         public void Reset()
+		//         {
+		//             position = -1;
+		//         }
+		//         public object Current
+		//         {
+		//             get
+		//             {
+		//                 try
+		//                 {
+		//                     return new NodeUnit(items[position].Key, items[position].Value);
+		//                 }
+		//                 catch (IndexOutOfRangeException)
+		//                 {
+		//                     throw new InvalidOperationException();
+		//                 }
+		//             }
+		//         }
+		//     }
 
-        public IEnumerator GetEnumerator()
-        {
-			return graph_dict.GetEnumerator();
-        }
+		public IEnumerator GetEnumerator()
+		{
+			return graphEdges.GetEnumerator();
+		}
 
 		public List<int[]> FindStrongComps(int gridScale)
 		{
 			Graph symb = this;
-			var symb_tr = new Graph(symb.Size);
+			var symb_tr = new Graph();
 
-			var order = new List<int>();
-			var component = new List<int>();
+            var order = TopologicalSort(gridScale);
 			var used = new bool[gridScale * gridScale];
 			var comp_array = new List<int[]>();
 
-			for (int i = 0; i < used.Length; i++)
-				used[i] = false;
+            foreach (KeyValuePair<int, List<int>> i in symb)
+                foreach (int j in i.Value)
+                    symb_tr.AddVertex(j, i.Key);
 
-			foreach (KeyValuePair<int, List<int>> i in symb)
-				foreach (int j in i.Value)
-					symb_tr.AddVertex(j, i.Key);
-
-			foreach (KeyValuePair<int, List<int>> i in symb)
-					if (!used[i.Key])
-						GetOrder(i.Key);
-
-			for (int i = 0; i < used.Length; i++)
-				used[i] = false;
-
-			for (int i = order.Count - 1; i >= 0; i--)
-			{
+            for (int i = order.Count - 1; i >= 0; i--)
+            {
 				int j = order[i];
-				if (!used[j])
+				if (!used[j] && symb_tr.Contains(j))
 				{
-					GetComponent(j);
-					var copy = new int[component.Count];
-					component.CopyTo(copy);
-					if (copy.Length > 1)
-						comp_array.Add(copy);
-					component.Clear();
+					var component = GetComponent(j);
+
+					if (component.Length > 1)
+						comp_array.Add(component);
 				}
 			}
 
 			return comp_array;
 
 
-			void GetOrder(int node)
-			{
-				used[node] = true;
-				foreach (int i in symb[node])
-					if (!used[i])
-						GetOrder(i);
-				order.Add(node);
+			int[] GetComponent(int node)
+            {
+				var component = new List<int>();
+
+				Stack<int> stack = new Stack<int>();
+				stack.Push(node);
+
+				while(stack.Count != 0)
+                {
+					int v = stack.Pop();
+					used[v] = true;
+					component.Add(v);
+
+					foreach (int i in symb_tr[v])
+					{
+						if (!used[i])
+						{
+							stack.Push(i);
+							used[i] = true;
+						}
+					}
+				}
+				return component.ToArray();
 			}
 
-			void GetComponent(int node)
-			{
-				used[node] = true;
-				component.Add(node);
-				foreach (int i in symb_tr[node])
-					if (!used[i])
-						GetComponent(i);
-			}
+
+
+
+
 		}
 
-		#region GraphMethods
-		public bool HasVertex(int i, int j)
+		
+		
+
+		private List<int> TopologicalSort(int gridScale)
+		{
+			Graph symb = this;
+			var used = new int[gridScale * gridScale];
+			var stack = new Stack<int>();
+			var order = new List<int>();
+
+			foreach (KeyValuePair<int, List<int>> i in graphEdges)
+			{
+				if (used[i.Key] == 0)
+					stack.Push(i.Key);
+
+				while (stack.Count != 0)
+				{
+					var v = stack.Peek();
+
+					if (used[v] != 0)
+					{
+						stack.Pop();
+						if(used[v] == 1)
+                        {
+							order.Add(v);
+							used[v] = 2;
+                        }
+						
+					}
+					else if (used[v] == 0)
+					{
+						used[v] = 1;
+						foreach (int u in symb[v])
+							if (used[u] == 0)
+								stack.Push(u);
+					}					
+				}
+			}
+			return order;
+		}
+
+        #region GraphMethods
+        public bool HasVertex(int i, int j)
         {
 			return this[i].Contains(j);
 		}
 
 		public void AddVertex(int i, int j)
         {
-			//graph_array[i].Add(j);
-			if (graph_dict.ContainsKey(i))
+			if (graphEdges.ContainsKey(i))
 			{
-				if (!graph_dict[i].Contains(j))
-					graph_dict[i].Add(j);
+				if (!graphEdges[i].Contains(j))
+				{
+					graphEdges[i].Add(j);
+				}
 			}
             else
             {
 				var tmp = new List<int>();
 				tmp.Add(j);
-				graph_dict[i] = tmp;
-            }
+				graphEdges[i] = tmp;
+			}
 		}
 
 		public long GetVnum()
 		{
 			long n = 0;
-			foreach (var node in graph_dict)
+			foreach (var node in graphEdges)
 			{
 				n += (long)node.Value.Count();
 			}
 			return n;
 		}
 
-		public int Size
+		public int Count
         {
-			get { return size; }
+			get { return graphEdges.Count; }
         }
-        #endregion
-    };
+
+		public bool Contains(int i)
+		{
+			return graphEdges.ContainsKey(i);
+		}
+		#endregion
+	};
 }

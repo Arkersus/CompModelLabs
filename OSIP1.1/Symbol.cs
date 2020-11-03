@@ -12,31 +12,35 @@ namespace OSIP1._1
 		private List<int[]> strongComps;
 		private int gridScale;
 		private int precision;
-		private decimal A, B;
-		private decimal cellSize;
+		private double A, B;
+		private double cellSize;
 		public Symbol(Configuration config, BackgroundWorker worker = null)
 		{
 			gridScale = config.gridScale;
 			precision = (int)Math.Sqrt(config.points);
-			A = config.A;
-			B = config.B;
+			A = (double)config.A;
+			B = (double)config.B;
 
-			Graph g = new Graph(config.gridScale * config.gridScale);
-			cellSize = 4.0m / config.gridScale;
-			decimal step = cellSize / precision;
+			Graph g = new Graph();
+			int size = gridScale * gridScale;
+			cellSize = 4.0 / config.gridScale;
+			double step = cellSize / precision;
 
-			for (decimal y = 2.0m; y > -2.0m; y -= cellSize)
-				for (decimal x = -2.0m; x < 2.0m; x += cellSize)
+			for (double y = 2.0; y > -2.0; y -= cellSize)
+				for (double x = -2.0; x < 2.0; x += cellSize)
 				{
-					int origin = GetCell(new Point(x,y), cellSize);
-					for (decimal j = y; j > y - cellSize; j -= step)
-						for (decimal i = x; i < x + cellSize; i += step)
+					int origin = GetCell(new Point<double>(x,y), cellSize, gridScale);
+					for (double j = y; j > y - cellSize; j -= step)
+						for (double i = x; i < x + cellSize; i += step)
 						{
-							Point p = new Point(i, j);
+							var p = new Point<double>(i, j);
 							p = calc(p);
-							if (p.x >= -2.0m && p.x < 2.0m && p.y > -2.0m && p.y <= 2.0m)
+							if (p != null)
 							{
-								int cell = GetCell(p, cellSize);
+								int cell = GetCell(p, cellSize, gridScale);
+
+								if (cell >= size)
+									continue;
 								if (!g.HasVertex(origin, cell))
 									g.AddVertex(origin, cell);
 							}
@@ -114,65 +118,84 @@ namespace OSIP1._1
 
 		public void LocalizeRecSet(int split)
         {
-			var nodes = new List<int>();
-			decimal oldCellSize = cellSize;
-			decimal newcellSize = oldCellSize / split;
-			decimal step = newcellSize / precision;
+			int newScale = gridScale * split;
+			double oldCellSize = cellSize;
+			double newCellSize = oldCellSize / split;
+			double step = newCellSize / precision;
+			int splitCells = split * split;
+			int newSize = newScale * newScale;
+
+			var newGraph = new Graph();
+
+			if (strongComps == null)
+				strongComps = symbGraph.FindStrongComps(gridScale);
 
 			foreach (int[] i in strongComps)
 				foreach (int j in i)
-					nodes.Add(j);
+                {
+					var origin = GetNodeCoords(oldCellSize, j, gridScale);
 
-			var newGraph = new Graph(nodes.Count * split * split);
+					for (int n = 0; n < splitCells; n++)
+                    {
+						var local = new Point<double>
+							(
+								origin.x + (double)(n % split) * newCellSize,
+								origin.y - (double)(n / split) * newCellSize
+							);
+						var localNode = GetCell(local, newCellSize, newScale);
 
-			foreach(int node in nodes)
-            {
-				Point p = GetNodeCoords(node, gridScale);
-				p *= oldCellSize;
-				p.Move(-2.0m, 2.0m - 2*p.y);
-				for (decimal y = 0.0m; y < newcellSize * split; y += newcellSize)
-					for (decimal x = 0.0m; x < newcellSize * split; x += newcellSize)
-					{
-						p.Move(x, -y);
-						for (decimal j = p.y; j > p.y - newcellSize; j -= step)
-							for (decimal i = p.x; i < p.x + newcellSize; i += step)
-							{
-								Point k = new Point(i, j);
-								k = calc(k);
-								if (p.x >= -2.0m && p.x < 2.0m && p.y > -2.0m && p.y <= 2.0m)
-								{
-									int cell = GetCell(k, newcellSize);
-									if (!newGraph.HasVertex(node, cell))
-										newGraph.AddVertex(node, cell);
+						for(int y = 0; y < precision; y++)
+							for(int x = 0; x < precision; x++)
+                            {
+								var p = calc(new Point<double>
+								(
+									local.x + (double)x * step,
+									local.y - (double)y * step
+								));
+								if (p != null)
+                                {
+									var cell = GetCell(p, newCellSize, newScale);
+
+									if (cell >= newSize) continue;
+
+									if (!newGraph.HasVertex(localNode, cell))
+										newGraph.AddVertex(localNode, cell);
 								}
-							}
-					}
-			}
+                            }
+                    }
+
+                }
+
 			symbGraph = newGraph;
-			cellSize = newcellSize;
-			gridScale *= split;
-			strongComps = symbGraph.FindStrongComps(gridScale);
+			cellSize = newCellSize;
+			gridScale = newScale;
+			//strongComps = symbGraph.FindStrongComps(newScale);
 		}
 
-		private Point calc(Point p)
+		private Point<double> calc(Point<double> p)
 		{
-			Point new_point = new Point();
+			Point<double> new_point = new Point<double>();
 			new_point.x = p.x * p.x - p.y * p.y + A;
 			new_point.y = 2 * p.x * p.y + B;
-			return new_point;
+
+			if (new_point.x >= -2.0 && new_point.x < 2.0 &&
+				new_point.y > -2.0 && new_point.y <= 2.0)
+				return new_point;
+			else
+				return null;
 		}
 
-		private int GetCell(Point p, decimal cellSize)
+		private int GetCell(Point<double> p, double cellSize, int gridScale)
 		{
-			decimal a = ((p.x + 2.0m) / cellSize);
-			decimal b = -(p.y - 2.0m) / cellSize;
+			double a = ((p.x + 2.0) / cellSize);
+			double b = -(p.y - 2.0) / cellSize;
 			return (int)a + (int)b * gridScale;
 		}
-		private Point GetNodeCoords(int node, int scale)
+		private Point<double> GetNodeCoords(double cellSize, int node, int scale)
         {
-			int x = node % scale;
-			int y = node / scale;
-			return new Point((decimal)x, (decimal)y);
+			double x = ((double)(node % scale) * cellSize) - 2.0;
+			double y = 2.0 - ((double)(node / scale) * cellSize);
+			return new Point<double>(x, y);
 		}
 
 		public Graph Graph
@@ -180,14 +203,21 @@ namespace OSIP1._1
 			get { return symbGraph; }
         }
 
+		public int GetScale
+        {
+			get { return gridScale; }
+        }
+
 		public int GetCompsNum()
         {
-			return symbGraph.FindStrongComps(gridScale).Count;
+			strongComps = symbGraph.FindStrongComps(gridScale);
+			return strongComps.Count;
 		}
 
 		public List<int[]> GetStrongComps()
         {
-			return symbGraph.FindStrongComps(gridScale);
+			strongComps = symbGraph.FindStrongComps(gridScale);
+			return strongComps;
         }
 
 
