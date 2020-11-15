@@ -90,69 +90,99 @@ namespace OSIP1._1
 			return graphEdges.GetEnumerator();
 		}
 
-		public List<int[]> FindStrongComps(int gridScale)
+		public List<int[]> FindStrongComps(int gridScale, bool isSort = false)
 		{
 			Graph symb = this;
 			var symb_tr = new Graph();
 
+            //var component = new List<int>();
+            //var order = new List<int>();
+
             var order = TopologicalSort(gridScale);
-			var used = new bool[gridScale * gridScale];
+            var used = new bool[gridScale * gridScale];
 			var comp_array = new List<int[]>();
 
             foreach (KeyValuePair<int, List<int>> i in symb)
                 foreach (int j in i.Value)
                     symb_tr.AddVertex(j, i.Key);
 
-            for (int i = order.Count - 1; i >= 0; i--)
+			//foreach (KeyValuePair<int, List<int>> i in symb)
+			//	if (!used[i.Key])
+			//		GetOrder(i.Key);
+
+			//used = new bool[gridScale * gridScale];
+
+			for (int i = order.Count - 1; i >= 0; i--)
             {
 				int j = order[i];
 				if (!used[j] && symb_tr.Contains(j))
 				{
-					var component = GetComponent(j);
+                    var component = GetComponent(j);
+                    //GetComponent(j);
 
-					if (component.Length > 1)
-						comp_array.Add(component);
+                    if (component.Length > 1 || isSort)
+                        comp_array.Add(component);
+					//if (component.Count > 1 || isSort)
+					//    comp_array.Add(component.ToArray());
+					//component.Clear();
 				}
 			}
 
 			return comp_array;
 
+            //void GetComponent(int node)
+            //{
+            //    used[node] = true;
+            //    component.Add(node);
+            //    foreach (int i in symb_tr[node])
+            //        if (!used[i])
+            //            GetComponent(i);
+            //}
 
-			int[] GetComponent(int node)
+            //void GetOrder(int node)
+            //{
+            //    used[node] = true;
+            //    foreach (int i in symb[node])
+            //        if (!used[i])
+            //            GetOrder(i);
+            //    order.Add(node);
+            //}
+
+            int[] GetComponent(int node)
             {
-				var component = new List<int>();
+                var component = new List<int>();
 
-				Stack<int> stack = new Stack<int>();
-				stack.Push(node);
+                Stack<int> stack = new Stack<int>();
+                stack.Push(node);
 
-				while(stack.Count != 0)
+                while (stack.Count != 0)
                 {
-					int v = stack.Pop();
-					used[v] = true;
-					component.Add(v);
+                    int v = stack.Pop();
+                    used[v] = true;
+                    component.Add(v);
 
-					foreach (int i in symb_tr[v])
-					{
-						if (!used[i])
-						{
-							stack.Push(i);
-							used[i] = true;
-						}
-					}
-				}
-				return component.ToArray();
-			}
-
-
+                    foreach (int i in symb_tr[v])
+                    {
+                        if (!used[i])
+                        {
+                            stack.Push(i);
+                            used[i] = true;
+                        }
+                    }
+                }
+                return component.ToArray();
+            }
 
 
 
-		}
 
-		
-		
 
-		private List<int> TopologicalSort(int gridScale)
+        }
+
+
+
+
+        private List<int> TopologicalSort(int gridScale)
 		{
 			Graph symb = this;
 			var used = new int[gridScale * gridScale];

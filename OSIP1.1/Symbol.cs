@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Collections.Concurrent;
+using System.Linq;
 
 namespace OSIP1._1
 {
@@ -118,6 +119,7 @@ namespace OSIP1._1
 
 		public void LocalizeRecSet(int split)
         {
+			int oldScale = gridScale;
 			int newScale = gridScale * split;
 			double oldCellSize = cellSize;
 			double newCellSize = oldCellSize / split;
@@ -131,12 +133,14 @@ namespace OSIP1._1
 				strongComps = symbGraph.FindStrongComps(gridScale);
 
 			foreach (int[] i in strongComps)
+			{
+				var component = i.ToList<int>();
 				foreach (int j in i)
-                {
+				{
 					var origin = GetNodeCoords(oldCellSize, j, gridScale);
 
 					for (int n = 0; n < splitCells; n++)
-                    {
+					{
 						var local = new Point<double>
 							(
 								origin.x + (double)(n % split) * newCellSize,
@@ -144,16 +148,16 @@ namespace OSIP1._1
 							);
 						var localNode = GetCell(local, newCellSize, newScale);
 
-						for(int y = 0; y < precision; y++)
-							for(int x = 0; x < precision; x++)
-                            {
+						for (int y = 0; y < precision; y++)
+							for (int x = 0; x < precision; x++)
+							{
 								var p = calc(new Point<double>
 								(
 									local.x + (double)x * step,
 									local.y - (double)y * step
 								));
 								if (p != null)
-                                {
+								{
 									var cell = GetCell(p, newCellSize, newScale);
 
 									if (cell >= newSize) continue;
@@ -161,10 +165,11 @@ namespace OSIP1._1
 									if (!newGraph.HasVertex(localNode, cell))
 										newGraph.AddVertex(localNode, cell);
 								}
-                            }
-                    }
+							}
+					}
 
-                }
+				}
+			}
 
 			symbGraph = newGraph;
 			cellSize = newCellSize;
@@ -219,6 +224,11 @@ namespace OSIP1._1
 			strongComps = symbGraph.FindStrongComps(gridScale);
 			return strongComps;
         }
+
+		public List<int[]> GetTopologySort()
+        {
+			return symbGraph.FindStrongComps(gridScale, true);
+		}
 
 
 

@@ -51,6 +51,12 @@ namespace OSIP1._1
                         lab3.Run();
                         break;
                     }
+                case 3:
+                    {
+                        var lab4 = new Lab4GUI(config);
+                        lab4.Show();
+                        break;
+                    }
 
 
             }

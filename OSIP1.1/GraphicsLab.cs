@@ -2,6 +2,7 @@
 using System;
 using System.Drawing;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,11 +20,36 @@ namespace OSIP1._1
         private List<Color> colors;
         int scale;
         System.Diagnostics.Stopwatch watch;
+        Lab3LocalizationGUI progress;
+        BackgroundWorker worker;
 
         public GraphicsLab(Configuration cfg)
         {
             config = cfg;
+            worker = new BackgroundWorker();
+            progress = new Lab3LocalizationGUI();
             watch = new System.Diagnostics.Stopwatch();
+
+            worker.DoWork += new DoWorkEventHandler(worker_DoWork);
+            worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_Completed);
+        }
+
+        private void worker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            symbImage.LocalizeRecSet(4);
+            scale *= 4;
+            strongComps = symbImage.GetStrongComps();
+            colors = GetColors(strongComps);
+        }
+
+        private void worker_Completed(object sender, RunWorkerCompletedEventArgs e)
+        {
+            watch.Stop();
+            progress.Hide();
+
+            GL.MatrixMode(MatrixMode.Projection);
+            GL.LoadIdentity();
+            GL.Ortho(0.0f, scale, scale, 0.0f, 0.0f, 1.0f);
         }
 
         private GameWindow GetWindow(int width, int height)
@@ -50,18 +76,21 @@ namespace OSIP1._1
 
         private void Window_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (e.KeyChar == ' ')
+            if (e.KeyChar == ' ' && !worker.IsBusy)
             {
+                progress.Show();
                 watch.Start();
-                symbImage.LocalizeRecSet(2);
-                strongComps = symbImage.GetStrongComps();
-                colors = GetColors(strongComps);
-                scale *= 2;
-                watch.Stop();
+                //symbImage.LocalizeRecSet(4);
+                //strongComps = symbImage.GetStrongComps();
+                //colors = GetColors(strongComps);
+                //scale *= 4;
+                worker.RunWorkerAsync();
+
+                //progress.Hide();
             
-                GL.MatrixMode(MatrixMode.Projection);
-                GL.LoadIdentity();
-                GL.Ortho(0.0f, scale, scale, 0.0f, 0.0f, 1.0f);
+                //GL.MatrixMode(MatrixMode.Projection);
+                //GL.LoadIdentity();
+                //GL.Ortho(0.0f, scale, scale, 0.0f, 0.0f, 1.0f);
             }
         }
 

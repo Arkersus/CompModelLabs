@@ -128,7 +128,8 @@
             this.boxSelectMode.Items.AddRange(new object[] {
             "Символический образ",
             "Компоненты сильной связности",
-            "Локализация цепно-рекуррентных множеств"});
+            "Локализация цепно-рекуррентных множеств",
+            "Топологическая сортировка"});
             this.boxSelectMode.Location = new System.Drawing.Point(249, 31);
             this.boxSelectMode.Name = "boxSelectMode";
             this.boxSelectMode.Size = new System.Drawing.Size(246, 21);
@@ -162,7 +163,7 @@
             this.buttonStart.UseVisualStyleBackColor = true;
             this.buttonStart.Click += new System.EventHandler(this.buttonStart_Click);
             // 
-            // Form1
+            // MainGUI
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -180,9 +181,9 @@
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.MaximizeBox = false;
-            this.Name = "Form1";
+            this.Name = "MainGUI";
             this.ShowIcon = false;
-            this.Text = "Лабораторная 1-3";
+            this.Text = "Лабораторная 1-4";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
